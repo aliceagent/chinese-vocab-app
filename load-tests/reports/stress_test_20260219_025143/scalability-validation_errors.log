@@ -1,5 +1,0 @@
-time="2026-02-19T03:14:32+02:00" level=info msg="📈 SCALABILITY VALIDATION: Systematic Load Testing"
-time="2026-02-19T03:14:32+02:00" level=info msg="🎯 Target: Find exact breaking points and scaling characteristics"
-time="2026-02-19T03:14:32+02:00" level=info msg="📊 Stages: 25 → 75 → 150 → 250 → 400 → 600 users"
-time="2026-02-19T03:14:32+02:00" level=info msg="⚡ Monitoring: Performance degradation, system stability, throughput"
-time="2026-02-19T03:14:32+02:00" level=info msg="🔍 Establishing performance baseline..."

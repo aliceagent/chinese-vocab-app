@@ -1,6 +1,0 @@
-time="2026-02-19T02:51:44+02:00" level=info msg="🚨 STRESS TEST: Finding Breaking Points"
-time="2026-02-19T02:51:44+02:00" level=info msg="⚠️  This test will push the system to failure"
-time="2026-02-19T02:51:44+02:00" level=info msg="📊 Monitoring: errors, timeouts, response times"
-time="2026-02-19T03:13:01+02:00" level=info msg="🏁 Stress test completed"
-time="2026-02-19T03:13:01+02:00" level=info msg="⏱️  Total duration: 1277.097s"
-time="2026-02-19T03:13:01+02:00" level=info msg="📋 Check reports for breaking point analysis"

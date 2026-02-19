@@ -1,3 +1,0 @@
-time="2026-02-19T03:13:31+02:00" level=info msg="🗄️  DATABASE STRESS TEST: Concurrent Operations"
-time="2026-02-19T03:13:31+02:00" level=info msg="🎯 Target: Connection pools, query performance, concurrent writes"
-time="2026-02-19T03:13:31+02:00" level=info msg="📊 Monitoring: Query times, connection errors, slow operations"
