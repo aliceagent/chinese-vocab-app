@@ -1,0 +1,58 @@
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: /Users/agentcaras/.openclaw/workspace/projects/chinese-vocab/load-tests/scenarios/database-stress.js
+        output: json (/Users/agentcaras/.openclaw/workspace/projects/chinese-vocab/load-tests/reports/stress_test_20260219_025143/database-stress_detailed.json)
+
+     scenarios: (100.00%) 1 scenario, 400 max VUs, 19m30s max duration (incl. graceful stop):
+              * default: Up to 400 looping VUs for 19m0s over 7 stages (gracefulRampDown: 30s, gracefulStop: 30s)
+
+
+
+  █ THRESHOLDS 
+
+    database_response_time
+    ✓ 'p(99)<5000' p(99)=0
+
+    db_connection_errors
+    ✓ 'rate<0.1' rate=0.00%
+
+    http_req_duration
+    ✓ 'p(95)<3000' p(95)=109.69ms
+
+    query_timeouts
+    ✓ 'count<20' count=0
+
+    slow_database_queries
+    ✓ 'count<50' count=0
+
+
+  █ TOTAL RESULTS 
+
+    CUSTOM
+    database_response_time...: avg=0        min=0        med=0        max=0        p(90)=0        p(95)=0       
+    db_connection_errors.....: 0.00%   0 out of 0
+    query_timeouts...........: 0       0/s
+    slow_database_queries....: 0       0/s
+
+    HTTP
+    http_req_duration........: avg=109.69ms min=109.69ms med=109.69ms max=109.69ms p(90)=109.69ms p(95)=109.69ms
+    http_req_failed..........: 100.00% 1 out of 1
+    http_reqs................: 1       9.015182/s
+
+    NETWORK
+    data_received............: 286 B   2.6 kB/s
+    data_sent................: 83 B    748 B/s
+
+
+
+
+Run       [ 100% ] setup()
+default   [   0% ]
+time="2026-02-19T03:13:31+02:00" level=error msg="Error: Database connectivity issue before test\n\tat setup (file:///Users/agentcaras/.openclaw/workspace/projects/chinese-vocab/load-tests/scenarios/database-stress.js:181:11(31))\n" hint="script exception"
