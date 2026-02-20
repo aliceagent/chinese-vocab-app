@@ -10,7 +10,7 @@ datasource db {
 }
 
 model User {
-  id                                                                       String                     @id @default(dbgenerated("gen_random_uuid()"))
+  id                                                                       String                     @id @default(uuid())
   username                                                                 String                     @unique @db.VarChar(50)
   email                                                                    String                     @unique @db.VarChar(255)
   passwordHash                                                             String                     @map("password_hash") @db.VarChar(255)
@@ -47,7 +47,7 @@ model User {
 }
 
 model VocabularyList {
-  id                       String                     @id @default(dbgenerated("gen_random_uuid()"))
+  id                       String                     @id @default(uuid())
   userId                   String                     @map("user_id")
   name                     String                     @db.VarChar(255)
   description              String?
@@ -76,7 +76,7 @@ model VocabularyList {
 }
 
 model VocabularyItem {
-  id                   String         @id @default(dbgenerated("gen_random_uuid()"))
+  id                   String         @id @default(uuid())
   vocabularyListId     String         @map("vocabulary_list_id")
   simplified           String         @db.VarChar(50)
   traditional          String?        @db.VarChar(50)
@@ -111,7 +111,7 @@ model VocabularyItem {
 }
 
 model GeneratedStory {
-  id                      String           @id @default(dbgenerated("gen_random_uuid()"))
+  id                      String           @id @default(uuid())
   userId                  String           @map("user_id")
   vocabularyListId        String           @map("vocabulary_list_id")
   title                   String           @db.VarChar(255)
@@ -153,7 +153,7 @@ model GeneratedStory {
 }
 
 model Quiz {
-  id               String          @id @default(dbgenerated("gen_random_uuid()"))
+  id               String          @id @default(uuid())
   userId           String          @map("user_id")
   vocabularyListId String?         @map("vocabulary_list_id")
   storyId          String?         @map("story_id")
@@ -172,7 +172,7 @@ model Quiz {
 }
 
 model QuizAttempt {
-  id               String   @id @default(dbgenerated("gen_random_uuid()"))
+  id               String   @id @default(uuid())
   quizId           String   @map("quiz_id")
   userId           String   @map("user_id")
   user_answers     Json
@@ -189,7 +189,7 @@ model QuizAttempt {
 }
 
 model UserProgress {
-  id               String         @id @default(dbgenerated("gen_random_uuid()"))
+  id               String         @id @default(uuid())
   userId           String         @map("user_id")
   vocabularyItemId String         @map("vocabulary_item_id")
   masteryLevel     Int            @default(0) @map("mastery_level")
@@ -209,7 +209,7 @@ model UserProgress {
 }
 
 model FileUpload {
-  id               String          @id @default(dbgenerated("gen_random_uuid()"))
+  id               String          @id @default(uuid())
   userId           String          @map("user_id")
   originalFilename String          @map("original_filename") @db.VarChar(255)
   fileSize         BigInt          @map("file_size")
@@ -229,7 +229,7 @@ model FileUpload {
 }
 
 model UserSession {
-  id           String   @id @default(dbgenerated("gen_random_uuid()"))
+  id           String   @id @default(uuid())
   userId       String   @map("user_id")
   sessionToken String   @unique @map("session_token") @db.VarChar(255)
   expiresAt    DateTime @map("expires_at")
@@ -243,7 +243,7 @@ model UserSession {
 }
 
 model achievements {
-  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  id         String   @id @default(uuid())
   user_id    String
   badge_type String
   earned_at  DateTime @default(now())
@@ -254,7 +254,7 @@ model achievements {
 }
 
 model classroom_assignments {
-  id                 String     @id @default(dbgenerated("gen_random_uuid()"))
+  id                 String     @id @default(uuid())
   classroom_id       String
   title              String     @db.VarChar(255)
   description        String?
@@ -271,7 +271,7 @@ model classroom_assignments {
 }
 
 model classroom_invites {
-  id           String     @id @default(dbgenerated("gen_random_uuid()"))
+  id           String     @id @default(uuid())
   classroom_id String
   code         String     @unique @db.VarChar(20)
   max_uses     Int?
@@ -305,7 +305,7 @@ model classrooms {
 }
 
 model daily_challenges {
-  id           String   @id @default(dbgenerated("gen_random_uuid()"))
+  id           String   @id @default(uuid())
   game_mode    String
   target_score Int
   description  String?
@@ -335,7 +335,7 @@ model daily_point_snapshots {
 }
 
 model enrollments {
-  id           String           @id @default(dbgenerated("gen_random_uuid()"))
+  id           String           @id @default(uuid())
   classroom_id String
   user_id      String
   role         ClassroomRole    @default(student)
@@ -352,7 +352,7 @@ model enrollments {
 }
 
 model game_high_scores {
-  id          String   @id @default(dbgenerated("gen_random_uuid()"))
+  id          String   @id @default(uuid())
   user_id     String
   game_mode   String
   score       Int
@@ -365,7 +365,7 @@ model game_high_scores {
 }
 
 model game_sessions {
-  id           String   @id @default(dbgenerated("gen_random_uuid()"))
+  id           String   @id @default(uuid())
   user_id      String
   game_mode    String
   score        Int
@@ -383,7 +383,7 @@ model game_sessions {
 }
 
 model leaderboard_cache {
-  id               String          @id @default(dbgenerated("gen_random_uuid()"))
+  id               String          @id @default(uuid())
   leaderboard_type LeaderboardType
   period           String?         @db.VarChar(20)
   rankings         Json
@@ -441,7 +441,7 @@ model question_pool {
 }
 
 model srs_progress {
-  id               String         @id @default(dbgenerated("gen_random_uuid()"))
+  id               String         @id @default(uuid())
   user_id          String
   vocab_item_id    String
   mode             SRSMode
@@ -465,7 +465,7 @@ model srs_progress {
 }
 
 model story_views {
-  id                String         @id @default(dbgenerated("gen_random_uuid()"))
+  id                String         @id @default(uuid())
   story_id          String
   viewer_id         String?
   viewed_at         DateTime       @default(now())
@@ -529,7 +529,7 @@ model user_stats {
 }
 
 model vocabulary_list_shares {
-  id                                                      String          @id @default(dbgenerated("gen_random_uuid()"))
+  id                                                      String          @id @default(uuid())
   vocabulary_list_id                                      String
   shared_with_user_id                                     String?
   shared_with_classroom_id                                String?
@@ -550,7 +550,7 @@ model vocabulary_list_shares {
 }
 
 model vocabulary_list_versions {
-  id                 String         @id @default(dbgenerated("gen_random_uuid()"))
+  id                 String         @id @default(uuid())
   vocabulary_list_id String
   version            Int
   name               String
