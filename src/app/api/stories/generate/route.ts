@@ -113,52 +113,31 @@ Return the story as a JSON object with this EXACT structure:
 
 Make sure the JSON is properly formatted and valid.`
 
-    // Determine which model to use and configure accordingly
-    const modelToUse = 'gpt-4o' // Use a model that supports JSON mode
+    // Determine which model to use - check env or default to gpt-4o-mini (widely available, supports JSON mode)
+    const modelToUse = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+    
+    // Skip JSON mode for models that don't support it
+    const modelsWithoutJsonMode = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-32k']
+    const supportsJsonMode = !modelsWithoutJsonMode.some(m => modelToUse.startsWith(m) && !modelToUse.includes('turbo-0125'))
 
     let completion
-    try {
-      // Try with JSON mode first (for models that support it)
-      completion = await openai.chat.completions.create({
-        model: modelToUse,
-        messages: [
-          {
-            role: "system",
-            content: "You are a Chinese language teacher creating educational stories. Always return valid JSON in the exact format requested."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.8,
-        max_tokens: 2000
-      })
-    } catch (error: any) {
-      // If JSON mode fails, try without it and parse manually
-      if (error.message?.includes('json_object') || error.message?.includes('response_format')) {
-        console.warn('JSON mode not supported, falling back to manual parsing')
-        
-        completion = await openai.chat.completions.create({
-          model: modelToUse,
-          messages: [
-            {
-              role: "system",
-              content: "You are a Chinese language teacher creating educational stories. Always return valid JSON in the exact format requested. Start your response with { and end with }."
-            },
-            {
-              role: "user",
-              content: prompt + "\n\nIMPORTANT: Return ONLY the JSON object, no additional text or formatting."
-            }
-          ],
-          temperature: 0.8,
-          max_tokens: 2000
-        })
-      } else {
-        throw error
-      }
-    }
+    
+    // Use simple prompt-based JSON generation (more reliable across models)
+    completion = await openai.chat.completions.create({
+      model: modelToUse,
+      messages: [
+        {
+          role: "system",
+          content: "You are a Chinese language teacher creating educational stories. You MUST return ONLY valid JSON in the exact format requested. No markdown, no code blocks, just pure JSON starting with { and ending with }."
+        },
+        {
+          role: "user",
+          content: prompt + "\n\nIMPORTANT: Return ONLY the JSON object, no additional text, no markdown formatting, no ```json blocks."
+        }
+      ],
+      temperature: 0.8,
+      max_tokens: 2000
+    })
 
     const content = completion.choices[0].message.content
     if (!content) {
@@ -168,15 +147,23 @@ Make sure the JSON is properly formatted and valid.`
     // Parse the response
     let storyData
     try {
-      // Clean up the content in case there's extra text
-      const jsonMatch = content.match(/\{[\s\S]*\}/)
-      const jsonString = jsonMatch ? jsonMatch[0] : content
+      // Clean up the content - remove markdown code blocks if present
+      let cleanContent = content.trim()
+      
+      // Remove ```json ... ``` or ``` ... ``` wrappers
+      if (cleanContent.startsWith('```')) {
+        cleanContent = cleanContent.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
+      }
+      
+      // Extract JSON object
+      const jsonMatch = cleanContent.match(/\{[\s\S]*\}/)
+      const jsonString = jsonMatch ? jsonMatch[0] : cleanContent
       storyData = JSON.parse(jsonString)
     } catch (parseError) {
       console.error('Failed to parse story JSON:', content)
       return NextResponse.json({
         success: false,
-        error: 'Failed to parse generated story'
+        error: 'Failed to parse generated story. Please try again.'
       }, { status: 500 })
     }
 
