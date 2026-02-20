@@ -190,21 +190,20 @@ Make sure the JSON is properly formatted and valid.`
     }
 
     // Save to database
+    let savedStoryId: string | undefined
     try {
-      // For now, we'll skip saving to database since we don't have user authentication set up
-      // In a real implementation, you'd get the userId from the authenticated session
-      
-      // await prisma.generatedStory.create({
-      //   data: {
-      //     userId: '00000000-0000-0000-0000-000000000000', // Would come from session
-      //     title: story.title,
-      //     content: story.content,
-      //     storyType,
-      //     difficultyLevel,
-      //     vocabularyListId,
-      //     vocabularyUsed: story.vocabularyUsed
-      //   }
-      // })
+      const savedStory = await prisma.generatedStory.create({
+        data: {
+          userId: vocabularyList.userId,
+          title: story.title,
+          content: story.content as any,
+          storyType: storyType as any,
+          difficultyLevel: difficultyLevel as any,
+          vocabularyListId,
+          vocabularyUsed: story.vocabularyUsed
+        }
+      })
+      savedStoryId = savedStory.id
     } catch (dbError) {
       console.error('Failed to save story to database:', dbError)
       // Continue anyway - the story was generated successfully
@@ -212,7 +211,10 @@ Make sure the JSON is properly formatted and valid.`
 
     const response: GeneratedStoryResponse = {
       success: true,
-      story
+      story: {
+        ...story,
+        ...(savedStoryId ? { id: savedStoryId } : {})
+      } as any
     }
 
     return NextResponse.json(response)
