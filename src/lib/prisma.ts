@@ -4,8 +4,7 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-// Only initialize Prisma client if database URL is properly configured
-const isPrismaConfigured = process.env.DATABASE_URL && 
+const isPrismaConfigured = process.env.DATABASE_URL &&
   !process.env.DATABASE_URL.includes('placeholder')
 
 export const prisma = isPrismaConfigured

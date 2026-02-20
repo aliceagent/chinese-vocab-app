@@ -1,104 +1,107 @@
-// prisma/schema.prisma
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
-
-// ==================== ENUMS ====================
-
-enum SubscriptionLevel {
-  free
-  premium
-  teacher
-}
-
-enum StoryType {
-  narrative
-  dialogue
-  news
-  essay
-}
-
-enum DifficultyLevel {
-  beginner
-  intermediate
-  advanced
-}
-
-enum UploadStatus {
-  pending
-  processing
-  completed
-  failed
-}
-
-// ==================== MODELS ====================
 
 model User {
-  id                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  username            String            @unique @db.VarChar(50)
-  email               String            @unique @db.VarChar(255)
-  passwordHash        String            @map("password_hash") @db.VarChar(255)
-  subscriptionLevel   SubscriptionLevel @default(free) @map("subscription_level")
-  learningPreferences Json?             @default("{}") @map("learning_preferences")
-  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt           DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
-  lastLogin           DateTime?         @map("last_login") @db.Timestamptz
-
-  vocabularyLists  VocabularyList[]
-  generatedStories GeneratedStory[]
-  quizzes          Quiz[]
-  quizAttempts     QuizAttempt[]
-  userProgress     UserProgress[]
-  fileUploads      FileUpload[]
-  userSessions     UserSession[]
+  id                                                                       String                     @id @default(dbgenerated("gen_random_uuid()"))
+  username                                                                 String                     @unique @db.VarChar(50)
+  email                                                                    String                     @unique @db.VarChar(255)
+  passwordHash                                                             String                     @map("password_hash") @db.VarChar(255)
+  subscriptionLevel                                                        SubscriptionLevel          @default(free) @map("subscription_level")
+  learningPreferences                                                      Json?                      @map("learning_preferences")
+  createdAt                                                                DateTime                   @default(now()) @map("created_at")
+  updatedAt                                                                DateTime                   @default(now()) @updatedAt @map("updated_at")
+  lastLogin                                                                DateTime?                  @map("last_login")
+  current_streak                                                           Int                        @default(0)
+  longest_streak                                                           Int                        @default(0)
+  last_active_date                                                         DateTime?
+  show_pinyin_in_srs                                                       Boolean                    @default(true)
+  achievements                                                             achievements[]
+  classrooms                                                               classrooms[]
+  enrollments                                                              enrollments[]
+  fileUploads                                                              FileUpload[]
+  game_high_scores                                                         game_high_scores[]
+  game_sessions                                                            game_sessions[]
+  generatedStories                                                         GeneratedStory[]
+  quizAttempts                                                             QuizAttempt[]
+  quizzes                                                                  Quiz[]
+  srs_progress                                                             srs_progress[]
+  user_leaderboard_settings                                                user_leaderboard_settings?
+  user_points                                                              user_points?
+  userProgress                                                             UserProgress[]
+  userSessions                                                             UserSession[]
+  user_stats                                                               user_stats?
+  vocabulary_list_shares_vocabulary_list_shares_shared_by_user_idTousers   vocabulary_list_shares[]   @relation("vocabulary_list_shares_shared_by_user_idTousers")
+  vocabulary_list_shares_vocabulary_list_shares_shared_with_user_idTousers vocabulary_list_shares[]   @relation("vocabulary_list_shares_shared_with_user_idTousers")
+  vocabulary_list_versions                                                 vocabulary_list_versions[]
+  vocabularyLists                                                          VocabularyList[]
 
   @@map("users")
 }
 
 model VocabularyList {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId          String   @map("user_id") @db.Uuid
-  name            String   @db.VarChar(255)
-  description     String?
-  sourceFileName  String?  @map("source_file_name") @db.VarChar(255)
-  sourceFileUrl   String?  @map("source_file_url")
-  totalWords      Int      @default(0) @map("total_words")
-  hskDistribution Json?    @default("{}") @map("hsk_distribution")
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
-
-  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vocabularyItems  VocabularyItem[]
-  generatedStories GeneratedStory[]
-  quizzes          Quiz[]
-  fileUploads      FileUpload[]
+  id                       String                     @id @default(dbgenerated("gen_random_uuid()"))
+  userId                   String                     @map("user_id")
+  name                     String                     @db.VarChar(255)
+  description              String?
+  sourceFileName           String?                    @map("source_file_name") @db.VarChar(255)
+  sourceFileUrl            String?                    @map("source_file_url")
+  totalWords               Int                        @default(0) @map("total_words")
+  hskDistribution          Json?                      @map("hsk_distribution")
+  is_public                Boolean                    @default(false)
+  createdAt                DateTime                   @default(now()) @map("created_at")
+  updatedAt                DateTime                   @default(now()) @updatedAt @map("updated_at")
+  is_template              Boolean                    @default(false)
+  last_modified_at         DateTime                   @default(now())
+  last_modified_by         String?
+  fileUploads              FileUpload[]
+  generatedStories         GeneratedStory[]
+  quizzes                  Quiz[]
+  vocabularyItems          VocabularyItem[]
+  vocabulary_list_shares   vocabulary_list_shares[]
+  vocabulary_list_versions vocabulary_list_versions[]
+  user                     User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([is_public])
+  @@index([is_template])
   @@map("vocabulary_lists")
 }
 
 model VocabularyItem {
-  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  vocabularyListId   String   @map("vocabulary_list_id") @db.Uuid
-  simplified         String   @db.VarChar(50)
-  traditional        String?  @db.VarChar(50)
-  pinyin             String?  @db.VarChar(255)
-  englishDefinitions String[] @map("english_definitions")
-  hskLevel           Int?     @map("hsk_level")
-  frequencyScore     Float    @default(0) @map("frequency_score")
-  partOfSpeech       String?  @map("part_of_speech") @db.VarChar(50)
-  exampleSentences   String[] @map("example_sentences")
-  userNotes          String?  @map("user_notes")
-  masteryLevel       Int      @default(0) @map("mastery_level")
-  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
-
-  vocabularyList VocabularyList @relation(fields: [vocabularyListId], references: [id], onDelete: Cascade)
-  userProgress   UserProgress[]
+  id                   String         @id @default(dbgenerated("gen_random_uuid()"))
+  vocabularyListId     String         @map("vocabulary_list_id")
+  simplified           String         @db.VarChar(50)
+  traditional          String?        @db.VarChar(50)
+  pinyin               String?        @db.VarChar(255)
+  englishDefinitions   String[]       @map("english_definitions")
+  hskLevel             Int?           @map("hsk_level")
+  frequencyScore       Float          @default(0) @map("frequency_score")
+  partOfSpeech         String?        @map("part_of_speech") @db.VarChar(50)
+  exampleSentences     String[]       @map("example_sentences")
+  userNotes            String?        @map("user_notes")
+  masteryLevel         Int            @default(0) @map("mastery_level")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @default(now()) @updatedAt @map("updated_at")
+  synonyms             Json?
+  antonyms             Json?
+  grammar_notes        String?
+  usage_patterns       String[]
+  collocations         String[]
+  measure_word         String?        @db.VarChar(20)
+  register             String?        @db.VarChar(20)
+  common_mistakes      String[]
+  details_generated_at DateTime?
+  srs_progress         srs_progress[]
+  userProgress         UserProgress[]
+  vocabularyList       VocabularyList @relation(fields: [vocabularyListId], references: [id], onDelete: Cascade)
 
   @@index([vocabularyListId])
   @@index([simplified])
@@ -108,40 +111,60 @@ model VocabularyItem {
 }
 
 model GeneratedStory {
-  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId           String          @map("user_id") @db.Uuid
-  vocabularyListId String          @map("vocabulary_list_id") @db.Uuid
-  title            String          @db.VarChar(255)
-  storyType        StoryType       @default(narrative) @map("story_type")
-  difficultyLevel  DifficultyLevel @default(intermediate) @map("difficulty_level")
-  content          Json            // Array of sentence objects
-  vocabularyUsed   String[]        @map("vocabulary_used") @db.Uuid
-  regenerationCount Int            @default(0) @map("regeneration_count")
-  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz
-
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vocabularyList VocabularyList @relation(fields: [vocabularyListId], references: [id], onDelete: Cascade)
-  quizzes        Quiz[]
+  id                      String           @id @default(dbgenerated("gen_random_uuid()"))
+  userId                  String           @map("user_id")
+  vocabularyListId        String           @map("vocabulary_list_id")
+  title                   String           @db.VarChar(255)
+  title_pinyin            String?          @db.VarChar(500)
+  title_english           String?          @db.VarChar(500)
+  storyType               StoryType        @default(narrative) @map("story_type")
+  difficultyLevel         DifficultyLevel  @default(intermediate) @map("difficulty_level")
+  content                 Json
+  vocabularyUsed          String[]         @map("vocabulary_used")
+  regenerationCount       Int              @default(0) @map("regeneration_count")
+  createdAt               DateTime         @default(now()) @map("created_at")
+  hsk_level               Int?
+  hsk_confidence          Float?
+  hsk_distribution        Json?
+  hsk_word_count          Int?
+  hsk_calculated_at       DateTime?
+  is_public               Boolean          @default(false)
+  visibility              StoryVisibility  @default(private)
+  public_at               DateTime?
+  view_count              Int              @default(0)
+  copy_count              Int              @default(0)
+  copied_from_id          String?
+  thumbnail_url           String?
+  thumbnail_prompt        String?
+  generated_stories       GeneratedStory?  @relation("generated_storiesTogenerated_stories", fields: [copied_from_id], references: [id])
+  other_generated_stories GeneratedStory[] @relation("generated_storiesTogenerated_stories")
+  user                    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabularyList          VocabularyList   @relation(fields: [vocabularyListId], references: [id], onDelete: Cascade)
+  quizzes                 Quiz[]
+  story_views             story_views[]
 
   @@index([userId])
   @@index([vocabularyListId])
+  @@index([hsk_level])
+  @@index([is_public, createdAt])
+  @@index([is_public, hsk_level])
+  @@index([is_public])
   @@map("generated_stories")
 }
 
 model Quiz {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId           String   @map("user_id") @db.Uuid
-  vocabularyListId String?  @map("vocabulary_list_id") @db.Uuid
-  storyId          String?  @map("story_id") @db.Uuid
-  title            String?  @db.VarChar(255)
-  questions        Json     // Array of question objects
-  totalQuestions   Int      @map("total_questions")
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
-
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vocabularyList VocabularyList? @relation(fields: [vocabularyListId], references: [id], onDelete: Cascade)
-  story          GeneratedStory? @relation(fields: [storyId], references: [id], onDelete: SetNull)
-  quizAttempts   QuizAttempt[]
+  id               String          @id @default(dbgenerated("gen_random_uuid()"))
+  userId           String          @map("user_id")
+  vocabularyListId String?         @map("vocabulary_list_id")
+  storyId          String?         @map("story_id")
+  title            String?         @db.VarChar(255)
+  questions        Json
+  totalQuestions   Int             @map("total_questions")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  quizAttempts     QuizAttempt[]
+  story            GeneratedStory? @relation(fields: [storyId], references: [id])
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabularyList   VocabularyList? @relation(fields: [vocabularyListId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([vocabularyListId])
@@ -149,36 +172,34 @@ model Quiz {
 }
 
 model QuizAttempt {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  quizId           String   @map("quiz_id") @db.Uuid
-  userId           String   @map("user_id") @db.Uuid
-  userAnswers      Json     // Array of answer objects
-  score            Float    // 0-1 scale
+  id               String   @id @default(dbgenerated("gen_random_uuid()"))
+  quizId           String   @map("quiz_id")
+  userId           String   @map("user_id")
+  user_answers     Json
+  score            Float
   timeSpentSeconds Int?     @map("time_spent_seconds")
-  completedAt      DateTime @default(now()) @map("completed_at") @db.Timestamptz
-
-  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completedAt      DateTime @default(now()) @map("completed_at")
+  quiz             Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([quizId])
-  @@index([userId, score(sort: Desc)])
+  @@index([userId, score])
   @@map("quiz_attempts")
 }
 
 model UserProgress {
-  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId           String    @map("user_id") @db.Uuid
-  vocabularyItemId String    @map("vocabulary_item_id") @db.Uuid
-  masteryLevel     Int       @default(0) @map("mastery_level")
-  correctAnswers   Int       @default(0) @map("correct_answers")
-  totalAttempts    Int       @default(0) @map("total_attempts")
-  lastPracticed    DateTime? @map("last_practiced") @db.Timestamptz
-  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
-
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vocabularyItem VocabularyItem @relation(fields: [vocabularyItemId], references: [id], onDelete: Cascade)
+  id               String         @id @default(dbgenerated("gen_random_uuid()"))
+  userId           String         @map("user_id")
+  vocabularyItemId String         @map("vocabulary_item_id")
+  masteryLevel     Int            @default(0) @map("mastery_level")
+  correctAnswers   Int            @default(0) @map("correct_answers")
+  totalAttempts    Int            @default(0) @map("total_attempts")
+  lastPracticed    DateTime?      @map("last_practiced")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @default(now()) @updatedAt @map("updated_at")
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabularyItem   VocabularyItem @relation(fields: [vocabularyItemId], references: [id], onDelete: Cascade)
 
   @@unique([userId, vocabularyItemId])
   @@index([userId])
@@ -188,37 +209,452 @@ model UserProgress {
 }
 
 model FileUpload {
-  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId           String       @map("user_id") @db.Uuid
-  originalFilename String       @map("original_filename") @db.VarChar(255)
-  fileSize         BigInt       @map("file_size")
-  fileType         String       @map("file_type") @db.VarChar(50)
-  storageKey       String       @map("storage_key") @db.VarChar(500)
-  processingStatus UploadStatus @default(pending) @map("processing_status")
-  processingError  String?      @map("processing_error")
-  vocabularyListId String?      @map("vocabulary_list_id") @db.Uuid
-  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz
-  processedAt      DateTime?    @map("processed_at") @db.Timestamptz
-
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vocabularyList VocabularyList? @relation(fields: [vocabularyListId], references: [id])
+  id               String          @id @default(dbgenerated("gen_random_uuid()"))
+  userId           String          @map("user_id")
+  originalFilename String          @map("original_filename") @db.VarChar(255)
+  fileSize         BigInt          @map("file_size")
+  fileType         String          @map("file_type") @db.VarChar(50)
+  s3_key           String          @db.VarChar(500)
+  processingStatus UploadStatus    @default(pending) @map("processing_status")
+  processingError  String?         @map("processing_error")
+  vocabularyListId String?         @map("vocabulary_list_id")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  processedAt      DateTime?       @map("processed_at")
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabularyList   VocabularyList? @relation(fields: [vocabularyListId], references: [id])
 
   @@index([processingStatus])
-  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, createdAt])
   @@map("file_uploads")
 }
 
 model UserSession {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId       String   @map("user_id") @db.Uuid
+  id           String   @id @default(dbgenerated("gen_random_uuid()"))
+  userId       String   @map("user_id")
   sessionToken String   @unique @map("session_token") @db.VarChar(255)
-  expiresAt    DateTime @map("expires_at") @db.Timestamptz
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
-  lastUsed     DateTime @default(now()) @map("last_used") @db.Timestamptz
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  lastUsed     DateTime @default(now()) @map("last_used")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([sessionToken])
   @@index([expiresAt])
   @@map("user_sessions")
+}
+
+model achievements {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  user_id    String
+  badge_type String
+  earned_at  DateTime @default(now())
+  users      User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, badge_type])
+  @@index([badge_type])
+}
+
+model classroom_assignments {
+  id                 String     @id @default(dbgenerated("gen_random_uuid()"))
+  classroom_id       String
+  title              String     @db.VarChar(255)
+  description        String?
+  vocabulary_list_id String?
+  story_id           String?
+  due_at             DateTime?
+  points             Int        @default(0)
+  created_at         DateTime   @default(now())
+  updated_at         DateTime   @default(now())
+  classrooms         classrooms @relation(fields: [classroom_id], references: [id], onDelete: Cascade)
+
+  @@index([classroom_id])
+  @@index([due_at])
+}
+
+model classroom_invites {
+  id           String     @id @default(dbgenerated("gen_random_uuid()"))
+  classroom_id String
+  code         String     @unique @db.VarChar(20)
+  max_uses     Int?
+  used_count   Int        @default(0)
+  expires_at   DateTime?
+  created_at   DateTime   @default(now())
+  classrooms   classrooms @relation(fields: [classroom_id], references: [id], onDelete: Cascade)
+
+  @@index([classroom_id])
+  @@index([code])
+}
+
+model classrooms {
+  id                     String                   @id
+  name                   String                   @db.VarChar(255)
+  description            String?
+  teacher_id             String
+  is_active              Boolean                  @default(true)
+  allow_self_enroll      Boolean                  @default(false)
+  max_students           Int?
+  created_at             DateTime                 @default(now())
+  updated_at             DateTime                 @default(now())
+  classroom_assignments  classroom_assignments[]
+  classroom_invites      classroom_invites[]
+  users                  User                     @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+  enrollments            enrollments[]
+  vocabulary_list_shares vocabulary_list_shares[]
+
+  @@index([is_active])
+  @@index([teacher_id])
+}
+
+model daily_challenges {
+  id           String   @id @default(dbgenerated("gen_random_uuid()"))
+  game_mode    String
+  target_score Int
+  description  String?
+  reward_xp    Int      @default(50)
+  date         DateTime @db.Date
+  is_active    Boolean  @default(true)
+  created_at   DateTime @default(now())
+
+  @@unique([date, game_mode])
+  @@index([date, is_active])
+  @@index([game_mode])
+}
+
+model daily_point_snapshots {
+  id             String      @id
+  user_points_id String
+  snapshot_date  DateTime    @db.Date
+  total_points   Int
+  daily_points   Int         @default(0)
+  rank           Int
+  created_at     DateTime    @default(now())
+  user_points    user_points @relation(fields: [user_points_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_points_id, snapshot_date])
+  @@index([snapshot_date])
+  @@index([snapshot_date, rank])
+}
+
+model enrollments {
+  id           String           @id @default(dbgenerated("gen_random_uuid()"))
+  classroom_id String
+  user_id      String
+  role         ClassroomRole    @default(student)
+  status       EnrollmentStatus @default(pending)
+  enrolled_at  DateTime         @default(now())
+  approved_at  DateTime?
+  removed_at   DateTime?
+  classrooms   classrooms       @relation(fields: [classroom_id], references: [id], onDelete: Cascade)
+  users        User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([classroom_id, user_id])
+  @@index([classroom_id, status])
+  @@index([user_id])
+}
+
+model game_high_scores {
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
+  user_id     String
+  game_mode   String
+  score       Int
+  achieved_at DateTime @default(now())
+  users       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, game_mode])
+  @@index([achieved_at])
+  @@index([game_mode, score(sort: Desc)])
+}
+
+model game_sessions {
+  id           String   @id @default(dbgenerated("gen_random_uuid()"))
+  user_id      String
+  game_mode    String
+  score        Int
+  duration     Int
+  words_played Int
+  accuracy     Float
+  created_at   DateTime @default(now())
+  users        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([created_at])
+  @@index([game_mode])
+  @@index([score(sort: Desc)])
+  @@index([user_id, game_mode])
+  @@index([user_id])
+}
+
+model leaderboard_cache {
+  id               String          @id @default(dbgenerated("gen_random_uuid()"))
+  leaderboard_type LeaderboardType
+  period           String?         @db.VarChar(20)
+  rankings         Json
+  total_users      Int             @default(0)
+  computed_at      DateTime        @default(now())
+
+  @@unique([leaderboard_type, period])
+  @@index([computed_at])
+}
+
+model point_activities {
+  id             String       @id
+  user_points_id String
+  activity_type  ActivityType
+  points_earned  Int
+  reference_id   String?
+  reference_type String?      @db.VarChar(50)
+  metadata       Json?
+  created_at     DateTime     @default(now())
+  user_points    user_points  @relation(fields: [user_points_id], references: [id], onDelete: Cascade)
+
+  @@index([activity_type])
+  @@index([created_at])
+  @@index([user_points_id, activity_type, created_at])
+  @@index([user_points_id, created_at])
+}
+
+model question_pool {
+  id                   String             @id
+  vocabulary_list_id   String
+  vocabulary_item_id   String
+  question_type        QuestionType       @default(fill_in_blank)
+  difficulty           QuestionDifficulty @default(medium)
+  question_text        String
+  question_pinyin      String?
+  options              Json
+  options_pinyin       Json?
+  correct_answer       String
+  explanation          String?
+  tested_word          String
+  quality_score        Float              @default(1.0)
+  times_used           Int                @default(0)
+  times_correct        Int                @default(0)
+  average_time_seconds Float?
+  generated_at         DateTime           @default(now())
+  last_used_at         DateTime?
+  is_active            Boolean            @default(true)
+
+  @@index([difficulty])
+  @@index([quality_score(sort: Desc)])
+  @@index([question_type])
+  @@index([vocabulary_item_id])
+  @@index([vocabulary_list_id])
+  @@index([vocabulary_list_id, is_active])
+}
+
+model srs_progress {
+  id               String         @id @default(dbgenerated("gen_random_uuid()"))
+  user_id          String
+  vocab_item_id    String
+  mode             SRSMode
+  ease_factor      Float          @default(2.5)
+  interval         Int            @default(0)
+  repetitions      Int            @default(0)
+  next_review_at   DateTime       @default(now())
+  last_reviewed_at DateTime?
+  total_reviews    Int            @default(0)
+  correct_count    Int            @default(0)
+  incorrect_count  Int            @default(0)
+  created_at       DateTime       @default(now())
+  updated_at       DateTime       @default(now())
+  users            User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  vocabulary_items VocabularyItem @relation(fields: [vocab_item_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, vocab_item_id, mode])
+  @@index([user_id, mode, next_review_at])
+  @@index([user_id, next_review_at])
+  @@index([vocab_item_id])
+}
+
+model story_views {
+  id                String         @id @default(dbgenerated("gen_random_uuid()"))
+  story_id          String
+  viewer_id         String?
+  viewed_at         DateTime       @default(now())
+  generated_stories GeneratedStory @relation(fields: [story_id], references: [id], onDelete: Cascade)
+
+  @@index([story_id])
+  @@index([story_id, viewed_at])
+  @@index([viewer_id])
+}
+
+model user_leaderboard_settings {
+  id           String                @id
+  user_id      String                @unique
+  display_name String?               @db.VarChar(50)
+  is_anonymous Boolean               @default(false)
+  visibility   LeaderboardVisibility @default(public)
+  timezone     String                @default("UTC") @db.VarChar(50)
+  created_at   DateTime              @default(now())
+  updated_at   DateTime              @default(now())
+  users        User                  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([visibility])
+}
+
+model user_points {
+  id                    String                  @id
+  user_id               String                  @unique
+  total_points          Int                     @default(0)
+  weekly_points         Int                     @default(0)
+  monthly_points        Int                     @default(0)
+  current_streak        Int                     @default(0)
+  longest_streak        Int                     @default(0)
+  last_streak_date      DateTime?
+  created_at            DateTime                @default(now())
+  updated_at            DateTime                @default(now())
+  daily_point_snapshots daily_point_snapshots[]
+  point_activities      point_activities[]
+  users                 User                    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([current_streak(sort: Desc)])
+  @@index([monthly_points(sort: Desc)])
+  @@index([total_points(sort: Desc)])
+  @@index([weekly_points(sort: Desc)])
+}
+
+model user_stats {
+  id               String    @id
+  user_id          String    @unique
+  current_streak   Int       @default(0)
+  longest_streak   Int       @default(0)
+  last_activity_at DateTime?
+  total_xp         Int       @default(0)
+  level            Int       @default(1)
+  streak_freezes   Int       @default(1)
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @default(now())
+  users            User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([level(sort: Desc)])
+  @@index([total_xp(sort: Desc)])
+}
+
+model vocabulary_list_shares {
+  id                                                      String          @id @default(dbgenerated("gen_random_uuid()"))
+  vocabulary_list_id                                      String
+  shared_with_user_id                                     String?
+  shared_with_classroom_id                                String?
+  is_public_template                                      Boolean         @default(false)
+  permission                                              SharePermission @default(view)
+  shared_by_user_id                                       String
+  shared_at                                               DateTime        @default(now())
+  users_vocabulary_list_shares_shared_by_user_idTousers   User            @relation("vocabulary_list_shares_shared_by_user_idTousers", fields: [shared_by_user_id], references: [id], onDelete: Cascade)
+  classrooms                                              classrooms?     @relation(fields: [shared_with_classroom_id], references: [id], onDelete: Cascade)
+  users_vocabulary_list_shares_shared_with_user_idTousers User?           @relation("vocabulary_list_shares_shared_with_user_idTousers", fields: [shared_with_user_id], references: [id], onDelete: Cascade)
+  vocabulary_lists                                        VocabularyList  @relation(fields: [vocabulary_list_id], references: [id], onDelete: Cascade)
+
+  @@unique([vocabulary_list_id, shared_with_classroom_id])
+  @@unique([vocabulary_list_id, shared_with_user_id])
+  @@index([is_public_template])
+  @@index([shared_with_classroom_id])
+  @@index([shared_with_user_id])
+}
+
+model vocabulary_list_versions {
+  id                 String         @id @default(dbgenerated("gen_random_uuid()"))
+  vocabulary_list_id String
+  version            Int
+  name               String
+  description        String?
+  items              Json
+  created_by_user_id String
+  created_at         DateTime       @default(now())
+  change_description String?
+  users              User           @relation(fields: [created_by_user_id], references: [id], onDelete: Cascade)
+  vocabulary_lists   VocabularyList @relation(fields: [vocabulary_list_id], references: [id], onDelete: Cascade)
+
+  @@unique([vocabulary_list_id, version])
+  @@index([vocabulary_list_id])
+}
+
+enum SubscriptionLevel {
+  free @map("FREE")
+  premium @map("PREMIUM")
+  teacher @map("TEACHER")
+}
+
+enum StoryType {
+  narrative @map("NARRATIVE")
+  dialogue @map("DIALOGUE")
+  news @map("NEWS")
+  essay @map("ESSAY")
+}
+
+enum DifficultyLevel {
+  beginner @map("BEGINNER")
+  intermediate @map("INTERMEDIATE")
+  advanced @map("ADVANCED")
+}
+
+enum UploadStatus {
+  pending @map("PENDING")
+  processing @map("PROCESSING")
+  completed @map("COMPLETED")
+  failed @map("FAILED")
+}
+
+enum ActivityType {
+  vocab_added @map("VOCAB_ADDED")
+  story_created @map("STORY_CREATED")
+  quiz_completed @map("QUIZ_COMPLETED")
+  quiz_perfect @map("QUIZ_PERFECT")
+  quiz_high_score @map("QUIZ_HIGH_SCORE")
+  daily_login @map("DAILY_LOGIN")
+  vocab_review @map("VOCAB_REVIEW")
+  word_mastered @map("WORD_MASTERED")
+  streak_bonus @map("STREAK_BONUS")
+  streak_milestone @map("STREAK_MILESTONE")
+}
+
+enum ClassroomRole {
+  teacher @map("TEACHER")
+  student @map("STUDENT")
+  assistant @map("ASSISTANT")
+}
+
+enum EnrollmentStatus {
+  active @map("ACTIVE")
+  pending @map("PENDING")
+  removed @map("REMOVED")
+}
+
+enum LeaderboardType {
+  all_time @map("ALL_TIME")
+  weekly @map("WEEKLY")
+  monthly @map("MONTHLY")
+}
+
+enum LeaderboardVisibility {
+  public @map("PUBLIC")
+  anonymous @map("ANONYMOUS")
+  hidden @map("HIDDEN")
+}
+
+enum QuestionDifficulty {
+  easy @map("EASY")
+  medium @map("MEDIUM")
+  hard @map("HARD")
+}
+
+enum QuestionType {
+  fill_in_blank @map("FILL_IN_BLANK")
+  multiple_choice @map("MULTIPLE_CHOICE")
+  pinyin_match @map("PINYIN_MATCH")
+  definition_match @map("DEFINITION_MATCH")
+}
+
+enum SRSMode {
+  en_to_cn @map("EN_TO_CN")
+  cn_to_en @map("CN_TO_EN")
+}
+
+enum SharePermission {
+  view @map("VIEW")
+  edit @map("EDIT")
+  admin @map("ADMIN")
+}
+
+enum StoryVisibility {
+  private @map("PRIVATE")
+  public_anonymous @map("PUBLIC_ANONYMOUS")
+  public_attributed @map("PUBLIC_ATTRIBUTED")
 }

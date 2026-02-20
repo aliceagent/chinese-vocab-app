@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         originalFilename: file.name,
         fileSize: file.size,
         fileType: getFileType(file.name),
-        storageKey,
+        s3_key: storageKey,
         processingStatus: 'pending'
       }
     })
