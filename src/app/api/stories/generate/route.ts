@@ -79,14 +79,7 @@ export async function POST(request: Request) {
 
     // Build prompt
     const vocabularyWords = vocabularyList.vocabularyItems.map(item => {
-      // englishDefinitions is stored as a JSON string in SQLite
-      let defs: string[] = []
-      try {
-        defs = typeof item.englishDefinitions === 'string' 
-          ? JSON.parse(item.englishDefinitions) 
-          : item.englishDefinitions
-      } catch { defs = [item.englishDefinitions as unknown as string] }
-      return `${item.simplified} (${item.pinyin || 'no pinyin'}) - ${defs.join(', ')}`
+      return `${item.simplified} (${item.pinyin || 'no pinyin'}) - ${item.englishDefinitions.join(', ')}`
     }).join('\n')
 
     const wordCount = storyLength === 'short' ? '200-300' : 
