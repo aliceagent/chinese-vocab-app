@@ -1,6 +1,6 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "buildCommand": "npx prisma generate && npm run build",
+  "buildCommand": "DATABASE_URL=postgresql://postgres:placeholder@localhost:5432/postgres DIRECT_URL=postgresql://postgres:placeholder@localhost:5432/postgres npx prisma generate && npm run build",
   "installCommand": "npm install"
 }
