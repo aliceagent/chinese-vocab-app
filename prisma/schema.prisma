@@ -5,35 +5,15 @@ generator client {
 
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
-// ==================== ENUMS ====================
+// ==================== ENUMS (as String for SQLite compatibility) ====================
 
-enum SubscriptionLevel {
-  free
-  premium
-  teacher
-}
-
-enum StoryType {
-  narrative
-  dialogue
-  news
-  essay
-}
-
-enum DifficultyLevel {
-  beginner
-  intermediate
-  advanced
-}
-
-enum UploadStatus {
-  pending
-  processing
-  completed
-  failed
-}
+// SubscriptionLevel: "free" | "premium" | "teacher"
+// StoryType: "narrative" | "dialogue" | "news" | "essay"  
+// DifficultyLevel: "beginner" | "intermediate" | "advanced"
+// UploadStatus: "pending" | "processing" | "completed" | "failed"
 
 // ==================== MODELS ====================
 
@@ -42,7 +22,7 @@ model User {
   username            String            @unique
   email               String            @unique
   passwordHash        String            @map("password_hash")
-  subscriptionLevel   SubscriptionLevel @default(free) @map("subscription_level")
+  subscriptionLevel   String            @default("free") @map("subscription_level")
   learningPreferences String?           @default("{}") @map("learning_preferences") // JSON as String
   createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime          @default(now()) @updatedAt @map("updated_at")
@@ -112,8 +92,8 @@ model GeneratedStory {
   userId           String          @map("user_id")
   vocabularyListId String          @map("vocabulary_list_id")
   title            String
-  storyType        StoryType       @default(narrative) @map("story_type")
-  difficultyLevel  DifficultyLevel @default(intermediate) @map("difficulty_level")
+  storyType        String          @default("narrative") @map("story_type")
+  difficultyLevel  String          @default("intermediate") @map("difficulty_level")
   content          String          @map("content") // JSON as String
   vocabularyUsed   String          @default("[]") @map("vocabulary_used") // JSON array as String
   regenerationCount Int            @default(0) @map("regeneration_count")
@@ -193,7 +173,7 @@ model FileUpload {
   fileSize         Int          @map("file_size") // Changed from BigInt
   fileType         String       @map("file_type")
   storageKey       String       @map("storage_key")
-  processingStatus UploadStatus @default(pending) @map("processing_status")
+  processingStatus String       @default("pending") @map("processing_status")
   processingError  String?      @map("processing_error")
   vocabularyListId String?      @map("vocabulary_list_id")
   createdAt        DateTime     @default(now()) @map("created_at")
