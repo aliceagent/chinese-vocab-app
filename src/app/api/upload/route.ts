@@ -6,7 +6,8 @@ import { randomUUID } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
-import pdf from 'pdf-parse'
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pdfParse = require('pdf-parse') as (buffer: Buffer) => Promise<{ text: string; numpages: number }>
 import OpenAI from 'openai'
 
 const UPLOAD_DIR = '/tmp/chinese-vocab-uploads'
@@ -158,7 +159,7 @@ async function processFileInBackground(uploadId: string, filePath: string, origi
       try {
         const fs = require('fs')
         const fileBuffer = fs.readFileSync(filePath)
-        const data = await pdf(fileBuffer)
+        const data = await pdfParse(fileBuffer)
         extractedText = data.text
         
         console.log(`Extracted ${extractedText.length} characters from PDF`)
