@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import React, { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Layout from '@/components/common/Layout'
 
@@ -28,8 +28,9 @@ interface GeneratedStory {
   vocabularyUsed: string[]
 }
 
-export default function GenerateStoryPage() {
+function GenerateStoryPageInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [selectedListId, setSelectedListId] = useState<string>('')
   const [storyType, setStoryType] = useState<'narrative' | 'dialogue' | 'news' | 'essay'>('narrative')
   const [difficultyLevel, setDifficultyLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner')
@@ -43,13 +44,23 @@ export default function GenerateStoryPage() {
   // Load vocabulary lists on component mount
   useEffect(() => {
     loadVocabularyLists()
-  }, [])
+    // Pre-select list from URL query param
+    const listId = searchParams.get('listId')
+    if (listId) setSelectedListId(listId)
+  }, [searchParams])
 
   async function loadVocabularyLists() {
     try {
-      // This would typically fetch from an API endpoint
-      // For now, we'll simulate with empty data since the backend isn't fully set up
-      setVocabularyLists([])
+      const res = await fetch('/api/vocabulary/lists')
+      const json = await res.json()
+      if (json.success && Array.isArray(json.data)) {
+        setVocabularyLists(json.data)
+        // Auto-select first list if only one exists and nothing pre-selected
+        const listId = new URLSearchParams(window.location.search).get('listId')
+        if (!listId && json.data.length === 1) {
+          setSelectedListId(json.data[0].id)
+        }
+      }
       setListsLoaded(true)
     } catch (error) {
       console.error('Failed to load vocabulary lists:', error)
@@ -350,5 +361,13 @@ export default function GenerateStoryPage() {
         </div>
       </div>
     </Layout>
+  )
+}
+
+export default function GenerateStoryPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div></div>}>
+      <GenerateStoryPageInner />
+    </Suspense>
   )
 }
