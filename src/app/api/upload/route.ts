@@ -4,9 +4,18 @@ import { existsSync } from 'fs'
 import path from 'path'
 import { randomUUID } from 'crypto'
 import { prisma } from '@/lib/prisma'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import pdf from 'pdf-parse'
+import OpenAI from 'openai'
 
 const UPLOAD_DIR = '/tmp/chinese-vocab-uploads'
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
 
 // Ensure upload directory exists
 async function ensureUploadDir() {
@@ -36,6 +45,16 @@ function getFileType(filename: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    
+    if (!session || !session.user || !session.user.id) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized - please log in' },
+        { status: 401 }
+      )
+    }
+
     await ensureUploadDir()
 
     const formData = await request.formData()
@@ -79,7 +98,7 @@ export async function POST(request: NextRequest) {
     const fileUpload = await prisma.fileUpload.create({
       data: {
         id: uploadId,
-        userId: 'demo-user', // TODO: Get from session/auth
+        userId: session.user.id,
         originalFilename: file.name,
         fileSize: file.size,
         fileType: getFileType(file.name),
@@ -89,7 +108,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Start background processing
-    processFileInBackground(uploadId, filePath, file.name)
+    processFileInBackground(uploadId, filePath, file.name, session.user.id)
 
     return NextResponse.json({
       success: true,
@@ -111,7 +130,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Background processing function
-async function processFileInBackground(uploadId: string, filePath: string, originalFilename: string) {
+async function processFileInBackground(uploadId: string, filePath: string, originalFilename: string, userId: string) {
   try {
     // Update status to processing
     await prisma.fileUpload.update({
@@ -126,34 +145,97 @@ async function processFileInBackground(uploadId: string, filePath: string, origi
       filename: originalFilename
     })
 
-    // Simulate processing with progress updates
-    const steps = [
-      { progress: 0.1, message: 'Reading file...' },
-      { progress: 0.3, message: 'Extracting text...' },
-      { progress: 0.5, message: 'Identifying Chinese characters...' },
-      { progress: 0.7, message: 'Looking up definitions...' },
-      { progress: 0.9, message: 'Creating vocabulary list...' }
-    ]
+    // Step 1: Extract text from PDF
+    broadcastToWebSocket(uploadId, {
+      type: 'processing_progress',
+      progress: 0.2,
+      message: 'Reading PDF file...'
+    })
 
-    for (const step of steps) {
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate work
-      
-      broadcastToWebSocket(uploadId, {
-        type: 'processing_progress',
-        progress: step.progress,
-        message: step.message
-      })
+    let extractedText = ''
+    
+    if (originalFilename.toLowerCase().endsWith('.pdf')) {
+      try {
+        const fs = require('fs')
+        const fileBuffer = fs.readFileSync(filePath)
+        const data = await pdf(fileBuffer)
+        extractedText = data.text
+        
+        console.log(`Extracted ${extractedText.length} characters from PDF`)
+      } catch (error) {
+        console.error('PDF extraction error:', error)
+        throw new Error('Failed to extract text from PDF')
+      }
+    } else {
+      // For other file types, read as text
+      const fs = require('fs')
+      extractedText = fs.readFileSync(filePath, 'utf8')
     }
 
-    // Create vocabulary list (simplified for demo)
+    if (!extractedText || extractedText.trim().length === 0) {
+      throw new Error('No text extracted from file')
+    }
+
+    // Step 2: Use OpenAI to extract Chinese vocabulary
+    broadcastToWebSocket(uploadId, {
+      type: 'processing_progress',
+      progress: 0.5,
+      message: 'Extracting Chinese vocabulary...'
+    })
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are a Chinese language expert. Extract all Chinese vocabulary from the provided text. Return only a valid JSON array with no other text or explanation."
+        },
+        {
+          role: "user",
+          content: `Extract all Chinese vocabulary from these lesson notes. Return a JSON array only, no other text:
+[{"hanzi": "汉字", "pinyin": "pīnyīn", "english": "English meaning"}]
+Include all Chinese words, phrases, and vocabulary. If pinyin is given in the notes, use it exactly. If not provided, add the correct pinyin.
+
+Text to process:
+${extractedText.slice(0, 8000)}`  // Limit to avoid token limits
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 2000
+    })
+
+    let vocabularyItems = []
+    
+    try {
+      const responseText = completion.choices[0].message.content?.trim() || ''
+      console.log('OpenAI response:', responseText.slice(0, 200) + '...')
+      
+      // Clean up the response - remove any markdown or extra text
+      const jsonMatch = responseText.match(/\[.*\]/s)
+      const jsonText = jsonMatch ? jsonMatch[0] : responseText
+      
+      vocabularyItems = JSON.parse(jsonText)
+      console.log(`Extracted ${vocabularyItems.length} vocabulary items`)
+    } catch (error) {
+      console.error('Failed to parse OpenAI response:', error)
+      throw new Error('Failed to extract vocabulary from text')
+    }
+
+    // Step 3: Create vocabulary list
+    broadcastToWebSocket(uploadId, {
+      type: 'processing_progress',
+      progress: 0.7,
+      message: 'Creating vocabulary list...'
+    })
+
     const vocabularyList = await prisma.vocabularyList.create({
       data: {
         id: randomUUID(),
-        userId: 'demo-user',
+        userId: userId,
         name: `Vocabulary from ${originalFilename}`,
         description: `Extracted vocabulary from uploaded file: ${originalFilename}`,
         sourceFileName: originalFilename,
-        totalWords: 0,
+        totalWords: vocabularyItems.length,
         hskDistribution: {
           hsk1: 0,
           hsk2: 0,
@@ -164,6 +246,39 @@ async function processFileInBackground(uploadId: string, filePath: string, origi
         }
       }
     })
+
+    // Step 4: Save individual vocabulary items
+    broadcastToWebSocket(uploadId, {
+      type: 'processing_progress',
+      progress: 0.9,
+      message: 'Saving vocabulary items...'
+    })
+
+    for (const item of vocabularyItems) {
+      if (item.hanzi && typeof item.hanzi === 'string') {
+        try {
+          await prisma.vocabularyItem.create({
+            data: {
+              id: randomUUID(),
+              vocabularyListId: vocabularyList.id,
+              simplified: item.hanzi,
+              traditional: item.traditional || null,
+              pinyin: item.pinyin || null,
+              englishDefinitions: [item.english || 'No definition'],
+              hskLevel: null, // Could be determined later
+              frequencyScore: 0,
+              partOfSpeech: null,
+              exampleSentences: [],
+              userNotes: null,
+              masteryLevel: 0
+            }
+          })
+        } catch (error) {
+          console.error('Failed to save vocabulary item:', item, error)
+          // Continue with other items
+        }
+      }
+    }
 
     // Update file upload record
     const updatedUpload = await prisma.fileUpload.update({
