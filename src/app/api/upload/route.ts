@@ -74,19 +74,27 @@ export async function POST(request: NextRequest) {
 
     const bytes = await file.arrayBuffer()
     await writeFile(filePath, Buffer.from(bytes))
+    console.log('[upload] step: file written to disk')
 
     // Create DB record
-    const fileUpload = await prisma.fileUpload.create({
-      data: {
-        id: uploadId,
-        userId: session.user.id,
-        originalFilename: file.name,
-        fileSize: file.size,
-        fileType: getFileType(file.name),
-        storageKey,
-        processingStatus: 'processing'
-      }
-    })
+    let fileUpload
+    try {
+      fileUpload = await prisma.fileUpload.create({
+        data: {
+          id: uploadId,
+          userId: session.user.id,
+          originalFilename: file.name,
+          fileSize: file.size,
+          fileType: getFileType(file.name),
+          storageKey,
+          processingStatus: 'processing'
+        }
+      })
+      console.log('[upload] step: DB record created', fileUpload.id)
+    } catch (dbErr) {
+      console.error('[upload] DB create failed:', dbErr)
+      throw new Error(`DB error: ${dbErr instanceof Error ? dbErr.message : String(dbErr)}`)
+    }
 
     // ── Step 1: Extract text ─────────────────────────────────────────────
     let extractedText = ''
@@ -117,7 +125,9 @@ export async function POST(request: NextRequest) {
     console.log(`Extracted ${extractedText.length} chars from ${file.name}`)
 
     // ── Step 2: Extract Chinese vocabulary via OpenAI ────────────────────
+    console.log('[upload] step: starting OpenAI call, text length:', extractedText.length)
     const apiKey = process.env.OPENAI_API_KEY
+    if (!apiKey) throw new Error('OPENAI_API_KEY not set')
     const OpenAIConstructor = await getOpenAI()
     const openai = new OpenAIConstructor({ apiKey })
     const completion = await openai.chat.completions.create({
