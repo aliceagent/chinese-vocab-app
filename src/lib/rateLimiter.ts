@@ -87,5 +87,5 @@ class InMemoryRateLimit {
 
 // Export rate limiter instances
 export const apiRateLimit = new InMemoryRateLimit(100, 60 * 1000) // 100 per minute
-export const authRateLimit = new InMemoryRateLimit(5, 5 * 60 * 1000) // 5 per 5 minutes
+export const authRateLimit = new InMemoryRateLimit(10, 5 * 60 * 1000) // 10 login attempts per 5 minutes
 export const uploadRateLimit = new InMemoryRateLimit(10, 60 * 60 * 1000) // 10 per hour

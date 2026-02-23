@@ -26,9 +26,12 @@ export async function middleware(request: NextRequest) {
 
     // Rate limiting based on endpoint
     let rateLimitResult
-    if (pathname.startsWith('/api/auth/')) {
-      // Strict rate limiting for authentication endpoints
+    if (pathname === '/api/auth/callback/credentials' || pathname === '/api/auth/signin') {
+      // Strict rate limiting only for actual login attempts
       rateLimitResult = await authRateLimit.check(`auth:${ip}`)
+    } else if (pathname.startsWith('/api/auth/')) {
+      // CSRF, session checks etc — use generous API limit (don't block NextAuth internals)
+      rateLimitResult = await apiRateLimit.check(`api:${ip}`)
     } else if (pathname.startsWith('/api/upload/')) {
       // Rate limiting for uploads
       rateLimitResult = await uploadRateLimit.check(`upload:${ip}`)
