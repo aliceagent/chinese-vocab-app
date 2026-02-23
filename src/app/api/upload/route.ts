@@ -155,8 +155,9 @@ async function processFileInBackground(uploadId: string, filePath: string, origi
     
     if (originalFilename.toLowerCase().endsWith('.pdf')) {
       try {
+        // Use pdf-parse/lib directly to avoid the test-file read that breaks Vercel serverless
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const pdfParse = require('pdf-parse') as (buffer: Buffer) => Promise<{ text: string; numpages: number }>
+        const pdfParse = require('pdf-parse/lib/pdf-parse.js') as (buffer: Buffer) => Promise<{ text: string; numpages: number }>
         const fs = require('fs')
         const fileBuffer = fs.readFileSync(filePath)
         const data = await pdfParse(fileBuffer)
