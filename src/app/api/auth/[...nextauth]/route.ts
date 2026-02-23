@@ -9,7 +9,7 @@ export const authOptions: NextAuthOptions = {
       id: "credentials",
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        email: { label: "Email or Username", type: "text" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
@@ -22,8 +22,14 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
+          // Detect if input looks like an email (contains @) or username
+          const identifier = credentials.email
+          const isEmail = identifier.includes("@")
+          
           const user = await prisma.user.findUnique({
-            where: { email: credentials.email }
+            where: isEmail 
+              ? { email: identifier }
+              : { username: identifier }
           })
 
           if (!user) {
