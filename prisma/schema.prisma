@@ -12,29 +12,29 @@ datasource db {
 // ==================== ENUMS ====================
 
 enum SubscriptionLevel {
-  free
-  premium
-  teacher
+  free    @map("FREE")
+  premium @map("PREMIUM")
+  teacher @map("TEACHER")
 }
 
 enum StoryType {
-  narrative
-  dialogue
-  news
-  essay
+  narrative @map("NARRATIVE")
+  dialogue  @map("DIALOGUE")
+  news      @map("NEWS")
+  essay     @map("ESSAY")
 }
 
 enum DifficultyLevel {
-  beginner
-  intermediate
-  advanced
+  beginner     @map("BEGINNER")
+  intermediate @map("INTERMEDIATE")
+  advanced     @map("ADVANCED")
 }
 
 enum UploadStatus {
-  pending
-  processing
-  completed
-  failed
+  pending    @map("PENDING")
+  processing @map("PROCESSING")
+  completed  @map("COMPLETED")
+  failed     @map("FAILED")
 }
 
 // ==================== MODELS ====================
