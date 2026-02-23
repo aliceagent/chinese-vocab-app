@@ -6,14 +6,17 @@ import { randomUUID } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
-import OpenAI from 'openai'
+// Lazy load OpenAI to avoid bundling issues
+let OpenAIClass: any = null
+async function getOpenAI() {
+  if (!OpenAIClass) {
+    OpenAIClass = (await import('openai')).default
+  }
+  return OpenAIClass
+}
 
 const UPLOAD_DIR = '/tmp/chinese-vocab-uploads'
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
 
 async function ensureUploadDir() {
   if (!existsSync(UPLOAD_DIR)) {
@@ -114,6 +117,9 @@ export async function POST(request: NextRequest) {
     console.log(`Extracted ${extractedText.length} chars from ${file.name}`)
 
     // ── Step 2: Extract Chinese vocabulary via OpenAI ────────────────────
+    const apiKey = process.env.OPENAI_API_KEY
+    const OpenAIConstructor = await getOpenAI()
+    const openai = new OpenAIConstructor({ apiKey })
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
