@@ -23,13 +23,14 @@ export const authOptions: NextAuthOptions = {
 
         try {
           // Detect if input looks like an email (contains @) or username
-          const identifier = credentials.email
+          const identifier = credentials.email.trim()
           const isEmail = identifier.includes("@")
           
-          const user = await prisma.user.findUnique({
+          // Use case-insensitive mode for both email and username
+          const user = await prisma.user.findFirst({
             where: isEmail 
-              ? { email: identifier }
-              : { username: identifier }
+              ? { email: { equals: identifier, mode: 'insensitive' } }
+              : { username: { equals: identifier, mode: 'insensitive' } }
           })
 
           if (!user) {
