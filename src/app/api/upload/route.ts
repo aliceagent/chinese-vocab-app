@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: fileUpload,
+      data: { ...fileUpload, fileSize: Number(fileUpload.fileSize) },
       message: 'File uploaded successfully'
     })
 
