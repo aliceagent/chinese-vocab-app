@@ -171,7 +171,8 @@ export default function FileUpload({ onUploadComplete, onUploadUpdate }: FileUpl
 
     // Detect connection quality and adjust settings
     const connectionQuality = getConnectionQuality()
-    const timeout = getAdaptiveTimeout()
+    // Processing is now synchronous (PDF parse + OpenAI) so use a generous timeout
+    const timeout = 90000 // 90 seconds
     const chunkSize = connectionQuality === 'slow' ? CHUNK_SIZE_SLOW : CHUNK_SIZE_FAST
 
     try {
@@ -217,27 +218,49 @@ export default function FileUpload({ onUploadComplete, onUploadUpdate }: FileUpl
           try {
             const response = JSON.parse(xhr.responseText)
             if (response.success && response.data) {
-              const uploadId = response.data.id
+              // Processing is synchronous — response already includes the vocabulary list
+              if (response.vocabularyList) {
+                setUploadState(prev => ({
+                  ...prev,
+                  stage: 'complete',
+                  progress: 100
+                }))
+                onUploadComplete(response.data)
+              } else {
+                // Fallback: connect SSE if server returns uploadId without completed data
+                const uploadId = response.data.id
+                setUploadState(prev => ({
+                  ...prev,
+                  uploadId,
+                  stage: 'processing',
+                  progress: 10
+                }))
+                connectSSE(uploadId)
+              }
+            } else {
               setUploadState(prev => ({
                 ...prev,
-                uploadId,
-                stage: 'processing',
-                progress: 10
+                stage: 'error',
+                error: response.error || 'Upload failed'
               }))
-              
-              // Connect SSE for processing updates
-              connectSSE(uploadId)
-            } else {
-              throw new Error(response.error || 'Upload failed')
             }
           } catch (error) {
-            throw new Error('Invalid response from server')
+            setUploadState(prev => ({
+              ...prev,
+              stage: 'error',
+              error: 'Invalid response from server'
+            }))
           }
         } else if (xhr.status === 408 || xhr.status === 502 || xhr.status === 503) {
-          // Retry on timeout or server errors
-          throw new Error('Server temporarily unavailable. Will retry...')
+          setUploadState(prev => ({
+            ...prev,
+            stage: 'error',
+            error: 'Server temporarily unavailable. Please try again.'
+          }))
         } else {
-          throw new Error(`Upload failed with status ${xhr.status}`)
+          let errMsg = `Upload failed (${xhr.status})`
+          try { errMsg = JSON.parse(xhr.responseText).error || errMsg } catch {}
+          setUploadState(prev => ({ ...prev, stage: 'error', error: errMsg }))
         }
       }
 
