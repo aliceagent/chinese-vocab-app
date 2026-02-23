@@ -154,7 +154,7 @@ model QuizAttempt {
   id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   quizId           String   @map("quiz_id") @db.Uuid
   userId           String   @map("user_id") @db.Uuid
-  userAnswers      Json     // Array of answer objects
+  userAnswers      Json     @map("user_answers") // Array of answer objects
   score            Float    // 0-1 scale
   timeSpentSeconds Int?     @map("time_spent_seconds")
   completedAt      DateTime @default(now()) @map("completed_at") @db.Timestamptz
