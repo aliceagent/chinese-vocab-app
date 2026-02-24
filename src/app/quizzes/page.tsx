@@ -19,6 +19,33 @@ interface QuizRecord {
   vocabularyList?: { name: string }
 }
 
+const QUIZ_MODES = [
+  {
+    id: 'multiple-choice',
+    label: 'Multiple Choice',
+    emoji: '🔤',
+    desc: 'Pick the correct English meaning for each character',
+  },
+  {
+    id: 'matching',
+    label: 'Matching Game',
+    emoji: '🔗',
+    desc: 'Connect Chinese characters to their English meanings',
+  },
+  {
+    id: 'speed-round',
+    label: 'Speed Round',
+    emoji: '⚡',
+    desc: '60 seconds. Answer as many as you can. Streak bonuses!',
+  },
+  {
+    id: 'match-attack',
+    label: 'Match Attack',
+    emoji: '🎯',
+    desc: 'Swipe right if it matches, left if it doesn\'t. 3 lives!',
+  },
+]
+
 export default function QuizzesPage() {
   const router = useRouter()
   const [lists, setLists] = useState<VocabList[]>([])
@@ -26,7 +53,7 @@ export default function QuizzesPage() {
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
   const [selectedList, setSelectedList] = useState<string>('')
-  const [quizType, setQuizType] = useState<'multiple-choice' | 'matching'>('multiple-choice')
+  const [quizType, setQuizType] = useState<string>('multiple-choice')
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -75,14 +102,12 @@ export default function QuizzesPage() {
   return (
     <Layout>
       <div className="max-w-2xl mx-auto px-4 py-8 pb-20 sm:pb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          🧠 Quizzes
-        </h1>
-        <p className="text-gray-500 mb-8">Test your Chinese vocabulary knowledge</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-1">🧠 Quizzes</h1>
+        <p className="text-gray-500 mb-8 text-sm">Test your Chinese vocabulary knowledge</p>
 
         {/* Start a Quiz */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Start a Quiz</h2>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+          <h2 className="text-base font-semibold text-gray-800 mb-3">Start a Quiz</h2>
 
           {lists.length === 0 ? (
             <p className="text-gray-500 text-sm">
@@ -91,13 +116,13 @@ export default function QuizzesPage() {
             </p>
           ) : (
             <>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
                 Vocabulary List
               </label>
               <select
                 value={selectedList}
                 onChange={e => setSelectedList(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 mb-4 focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 mb-5 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
               >
                 <option value="">— choose a list —</option>
                 {lists.map(l => (
@@ -107,30 +132,29 @@ export default function QuizzesPage() {
                 ))}
               </select>
 
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Quiz Type
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                Game Mode
               </label>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <button
-                  onClick={() => setQuizType('multiple-choice')}
-                  className={`p-3 rounded-lg border-2 text-sm font-medium transition-colors ${
-                    quizType === 'multiple-choice'
-                      ? 'border-red-600 bg-red-50 text-red-700'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                  }`}
-                >
-                  🔤 Multiple Choice
-                </button>
-                <button
-                  onClick={() => setQuizType('matching')}
-                  className={`p-3 rounded-lg border-2 text-sm font-medium transition-colors ${
-                    quizType === 'matching'
-                      ? 'border-red-600 bg-red-50 text-red-700'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                  }`}
-                >
-                  🔗 Matching Game
-                </button>
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {QUIZ_MODES.map(mode => (
+                  <button
+                    key={mode.id}
+                    onClick={() => setQuizType(mode.id)}
+                    className={`p-3 rounded-xl border-2 text-left transition-all ${
+                      quizType === mode.id
+                        ? 'border-red-600 bg-red-50'
+                        : 'border-gray-100 bg-gray-50 hover:border-gray-200'
+                    }`}
+                  >
+                    <span className="text-xl block mb-0.5">{mode.emoji}</span>
+                    <span className={`text-xs font-semibold block ${quizType === mode.id ? 'text-red-700' : 'text-gray-800'}`}>
+                      {mode.label}
+                    </span>
+                    <span className="text-xs text-gray-400 leading-tight block mt-0.5">
+                      {mode.desc}
+                    </span>
+                  </button>
+                ))}
               </div>
 
               {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
@@ -138,9 +162,9 @@ export default function QuizzesPage() {
               <button
                 onClick={startQuiz}
                 disabled={starting}
-                className="w-full bg-red-600 text-white rounded-lg py-3 font-semibold text-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full bg-red-600 text-white rounded-xl py-3 font-semibold text-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {starting ? 'Generating quiz…' : '▶ Start Quiz'}
+                {starting ? 'Generating…' : '▶ Start'}
               </button>
             </>
           )}
@@ -148,9 +172,9 @@ export default function QuizzesPage() {
 
         {/* Recent Quizzes */}
         {recentQuizzes.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Quizzes</h2>
-            <div className="space-y-3">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <h2 className="text-base font-semibold text-gray-800 mb-3">Recent Quizzes</h2>
+            <div className="space-y-2">
               {recentQuizzes.map(q => {
                 const lastAttempt = q.quizAttempts[0]
                 return (

@@ -3,6 +3,13 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
 
+type VocabItem = {
+  id: string
+  simplified: string
+  pinyin: string | null
+  englishDefinitions: string[]
+}
+
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
@@ -10,6 +17,23 @@ function shuffle<T>(arr: T[]): T[] {
     ;[a[i], a[j]] = [a[j], a[i]]
   }
   return a
+}
+
+function buildMCQuestions(selected: VocabItem[], pool: VocabItem[]) {
+  return selected.map((item) => {
+    const correctAnswer = item.englishDefinitions[0]
+    const others = pool.filter(i => i.id !== item.id)
+    const wrongChoices = shuffle(others).slice(0, 3).map(i => i.englishDefinitions[0])
+    const choices = shuffle([correctAnswer, ...wrongChoices])
+    return {
+      id: item.id,
+      type: 'multiple-choice' as const,
+      character: item.simplified,
+      pinyin: item.pinyin ?? '',
+      correctAnswer,
+      choices,
+    }
+  })
 }
 
 export async function POST(request: NextRequest) {
@@ -26,7 +50,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'vocabularyListId is required' }, { status: 400 })
     }
 
-    // Verify list belongs to user
     const list = await prisma.vocabularyList.findFirst({
       where: { id: vocabularyListId, userId: session.user.id },
     })
@@ -34,7 +57,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Vocabulary list not found' }, { status: 404 })
     }
 
-    // Fetch vocab items
     const items = await prisma.vocabularyItem.findMany({
       where: { vocabularyListId },
       select: { id: true, simplified: true, pinyin: true, englishDefinitions: true },
@@ -47,46 +69,58 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Filter to items that have at least one English definition
-    const validItems = items.filter(i => i.englishDefinitions.length > 0)
-    if (validItems.length < 4) {
+    const pool = items.filter(i => i.englishDefinitions.length > 0)
+    if (pool.length < 4) {
       return NextResponse.json({
         success: false,
         error: 'Need at least 4 items with English definitions',
       }, { status: 400 })
     }
 
-    const count = Math.min(questionCount, validItems.length)
-    const selected = shuffle(validItems).slice(0, count)
-
     let questions: unknown[]
+    let totalQuestions: number
+    let title: string
 
     if (quizType === 'multiple-choice') {
-      questions = selected.map((item) => {
-        const correctAnswer = item.englishDefinitions[0]
-        // Pick 3 wrong answers from other items
-        const others = validItems.filter(i => i.id !== item.id)
-        const wrongChoices = shuffle(others)
-          .slice(0, 3)
-          .map(i => i.englishDefinitions[0])
-        const choices = shuffle([correctAnswer, ...wrongChoices])
-        return {
-          id: item.id,
-          type: 'multiple-choice',
-          character: item.simplified,
-          pinyin: item.pinyin ?? '',
-          correctAnswer,
-          choices,
-        }
-      })
+      const count = Math.min(questionCount, pool.length)
+      const selected = shuffle(pool).slice(0, count)
+      questions = buildMCQuestions(selected, pool)
+      totalQuestions = selected.length
+      title = `${list.name} — Multiple Choice`
+
     } else if (quizType === 'matching') {
-      const pairs = selected.slice(0, 10).map(item => ({
+      const selected = shuffle(pool).slice(0, Math.min(10, pool.length))
+      const pairs = selected.map(item => ({
         id: item.id,
         character: item.simplified,
         pinyin: item.pinyin ?? '',
         meaning: item.englishDefinitions[0],
       }))
       questions = [{ type: 'matching', pairs }]
+      totalQuestions = selected.length
+      title = `${list.name} — Matching`
+
+    } else if (quizType === 'speed-round') {
+      const count = Math.min(30, pool.length)
+      const selected = shuffle(pool).slice(0, count)
+      const mcQuestions = buildMCQuestions(selected, pool)
+      questions = [{ type: 'speed-round', questions: mcQuestions, durationSeconds: 60 }]
+      totalQuestions = mcQuestions.length
+      title = `${list.name} — Speed Round ⚡`
+
+    } else if (quizType === 'match-attack') {
+      const count = Math.min(30, pool.length)
+      const selected = shuffle(pool).slice(0, count)
+      const pairs = selected.map(item => ({
+        id: item.id,
+        character: item.simplified,
+        pinyin: item.pinyin ?? '',
+        meaning: item.englishDefinitions[0],
+      }))
+      questions = [{ type: 'match-attack', pairs }]
+      totalQuestions = selected.length
+      title = `${list.name} — Match Attack 🎯`
+
     } else {
       return NextResponse.json({ success: false, error: 'Invalid quizType' }, { status: 400 })
     }
@@ -95,9 +129,9 @@ export async function POST(request: NextRequest) {
       data: {
         userId: session.user.id,
         vocabularyListId,
-        title: `${list.name} — ${quizType === 'matching' ? 'Matching' : 'Multiple Choice'}`,
+        title,
         questions: questions as never,
-        totalQuestions: quizType === 'matching' ? selected.slice(0, 10).length : selected.length,
+        totalQuestions,
       },
     })
 
