@@ -50,30 +50,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'vocabularyListId is required' }, { status: 400 })
     }
 
+    console.log('[quiz/generate] step1: userId=', session.user.id, 'listId=', vocabularyListId)
     const list = await prisma.vocabularyList.findFirst({
       where: { id: vocabularyListId, userId: session.user.id },
     })
     if (!list) {
+      console.log('[quiz/generate] list not found')
       return NextResponse.json({ success: false, error: 'Vocabulary list not found' }, { status: 404 })
     }
 
+    console.log('[quiz/generate] step2: list found:', list.name)
     const items = await prisma.vocabularyItem.findMany({
       where: { vocabularyListId },
       select: { id: true, simplified: true, pinyin: true, englishDefinitions: true },
     })
 
+    console.log('[quiz/generate] step3: items count:', items.length)
     if (items.length < 4) {
       return NextResponse.json({
         success: false,
-        error: 'Need at least 4 vocabulary items to generate a quiz',
+        error: `Need at least 4 vocabulary items (got ${items.length})`,
       }, { status: 400 })
     }
 
     const pool = items.filter(i => Array.isArray(i.englishDefinitions) && i.englishDefinitions.length > 0)
+    console.log('[quiz/generate] step4: pool size:', pool.length)
     if (pool.length < 4) {
       return NextResponse.json({
         success: false,
-        error: 'Need at least 4 items with English definitions',
+        error: `Need at least 4 items with English definitions (got ${pool.length} of ${items.length})`,
       }, { status: 400 })
     }
 
@@ -125,6 +130,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Invalid quizType' }, { status: 400 })
     }
 
+    console.log('[quiz/generate] step5: creating quiz, type=', quizType, 'totalQ=', totalQuestions)
     const quiz = await prisma.quiz.create({
       data: {
         userId: session.user.id,
@@ -135,6 +141,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    console.log('[quiz/generate] step6: quiz created:', quiz.id)
     return NextResponse.json({ success: true, data: { quizId: quiz.id, quizType, questions } })
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
