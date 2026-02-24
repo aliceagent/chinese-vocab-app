@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export const maxDuration = 60
+
 // Lazy load OpenAI to avoid bundling issues
 let OpenAI: any = null
 

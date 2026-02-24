@@ -3,5 +3,16 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "installCommand": "npm install",
-  "devCommand": "npm run dev"
+  "devCommand": "npm run dev",
+  "functions": {
+    "src/app/api/upload/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/stories/generate/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/quizzes/generate/route.ts": {
+      "maxDuration": 30
+    }
+  }
 }
