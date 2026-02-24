@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const pool = items.filter(i => i.englishDefinitions.length > 0)
+    const pool = items.filter(i => Array.isArray(i.englishDefinitions) && i.englishDefinitions.length > 0)
     if (pool.length < 4) {
       return NextResponse.json({
         success: false,
@@ -137,7 +137,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: { quizId: quiz.id, quizType, questions } })
   } catch (error) {
-    console.error('Error generating quiz:', error)
-    return NextResponse.json({ success: false, error: 'Failed to generate quiz' }, { status: 500 })
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error('Error generating quiz:', msg)
+    return NextResponse.json({ success: false, error: `Server error: ${msg}` }, { status: 500 })
   }
 }
