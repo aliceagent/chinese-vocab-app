@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 
 interface PageProps {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ mode?: string }>
 }
 
 async function getVocabList(id: string) {
@@ -26,10 +27,12 @@ async function getVocabList(id: string) {
   }
 }
 
-export default async function FlashcardsPage({ params }: PageProps) {
+export default async function FlashcardsPage({ params, searchParams }: PageProps) {
   const { id } = await params
-  const list = await getVocabList(id)
+  const { mode: modeParam } = await searchParams
+  const mode = modeParam === 'en-zh' ? 'en-zh' : 'zh-en'
 
+  const list = await getVocabList(id)
   if (!list) notFound()
 
   return (
@@ -38,6 +41,7 @@ export default async function FlashcardsPage({ params }: PageProps) {
         listId={list.id}
         listName={list.name}
         items={list.vocabularyItems}
+        mode={mode}
       />
     </Layout>
   )
