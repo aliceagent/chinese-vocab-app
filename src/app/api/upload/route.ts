@@ -172,28 +172,31 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    for (const item of vocabularyItems) {
-      if (item.hanzi && typeof item.hanzi === 'string') {
-        try {
-          await prisma.vocabularyItem.create({
-            data: {
-              id: randomUUID(),
-              vocabularyListId: vocabularyList.id,
-              simplified: item.hanzi,
-              traditional: item.traditional || null,
-              pinyin: item.pinyin || null,
-              englishDefinitions: [item.english || ''],
-              hskLevel: null,
-              frequencyScore: 0,
-              partOfSpeech: null,
-              exampleSentences: [],
-              userNotes: null,
-              masteryLevel: 0
-            }
-          })
-        } catch (err) {
-          console.error('Failed to save vocab item:', item, err)
-        }
+    // Batch insert all vocabulary items in a single query (much faster than individual inserts)
+    const validItems = vocabularyItems.filter(item => item.hanzi && typeof item.hanzi === 'string')
+    if (validItems.length > 0) {
+      try {
+        await prisma.vocabularyItem.createMany({
+          data: validItems.map(item => ({
+            id: randomUUID(),
+            vocabularyListId: vocabularyList.id,
+            simplified: item.hanzi,
+            traditional: item.traditional || null,
+            pinyin: item.pinyin || null,
+            englishDefinitions: [item.english || ''],
+            hskLevel: null,
+            frequencyScore: 0,
+            partOfSpeech: null,
+            exampleSentences: [],
+            userNotes: null,
+            masteryLevel: 0
+          })),
+          skipDuplicates: true
+        })
+        console.log(`[upload] step: batch inserted ${validItems.length} vocab items`)
+      } catch (err) {
+        console.error('[upload] Failed to batch insert vocab items:', err)
+        throw new Error(`Failed to save vocabulary: ${err instanceof Error ? err.message : String(err)}`)
       }
     }
 
