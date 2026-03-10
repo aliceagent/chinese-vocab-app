@@ -31,6 +31,21 @@
 
 ---
 
+## Data Isolation (CRITICAL - DO NOT REGRESS)
+
+1. **All user data must be filtered by userId**
+   - Vocabulary lists: only show lists where `userId` matches logged-in user
+   - Stories: only show stories where `userId` matches logged-in user
+   - Quizzes: only show quizzes where `userId` matches logged-in user
+   - Progress: only show progress where `userId` matches logged-in user
+
+2. **Session validation required**
+   - All protected pages must check `getServerSession(authOptions)`
+   - Redirect to `/login` if no valid session
+   - Use `session.user.id` for all database queries
+
+---
+
 ## Core Features
 
 ### Vocabulary Lists
