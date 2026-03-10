@@ -80,7 +80,7 @@ export async function POST(request: Request) {
     const openai = new OpenAIClass({ apiKey })
 
     // Build prompt
-    const vocabularyWords = vocabularyList.vocabularyItems.map(item => 
+    const vocabularyWords = vocabularyList.vocabularyItems.map((item: { simplified: string; pinyin: string | null; englishDefinitions: string[] }) => 
       `${item.simplified} (${item.pinyin || 'no pinyin'}) - ${item.englishDefinitions.join(', ')}`
     ).join('\n')
 

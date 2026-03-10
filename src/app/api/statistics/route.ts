@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
         totalStudyTime: Math.round((quizStatsResult._sum.timeSpentSeconds || 0) / 60)
       },
       weeklyProgress: weeklyProgress,
-      masteryDistribution: masteryDistribution.map(item => ({
+      masteryDistribution: masteryDistribution.map((item: { masteryLevel: number; _count: { masteryLevel: number } }) => ({
         level: item.masteryLevel,
         count: item._count.masteryLevel
       })),
@@ -226,7 +226,7 @@ async function getWeeklyProgress(userId: string, sevenDaysAgo: Date) {
     ]);
 
     const accuracy = quizzes.length > 0 
-      ? Math.round((quizzes.reduce((sum, quiz) => sum + quiz.score, 0) / quizzes.length) * 100)
+      ? Math.round((quizzes.reduce((sum: number, quiz: { score: number }) => sum + quiz.score, 0) / quizzes.length) * 100)
       : 0;
 
     weeklyData.push({
@@ -317,7 +317,7 @@ async function getRecentActivity(userId: string) {
   }> = [];
 
   // Add quiz activities
-  recentQuizzes.forEach(attempt => {
+  recentQuizzes.forEach((attempt: { completedAt: Date; score: number; quiz: { title: string | null } }) => {
     activities.push({
       date: format(attempt.completedAt, 'MMM dd, HH:mm'),
       type: 'quiz' as const,
@@ -327,7 +327,7 @@ async function getRecentActivity(userId: string) {
   });
 
   // Add vocabulary progress activities
-  recentProgress.forEach(progress => {
+  recentProgress.forEach((progress: { updatedAt: Date; vocabularyItem: { simplified: string } }) => {
     activities.push({
       date: format(progress.updatedAt, 'MMM dd, HH:mm'),
       type: 'vocabulary' as const,

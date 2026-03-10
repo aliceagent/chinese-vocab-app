@@ -133,7 +133,7 @@ export default async function VocabularyListPage({ params }: PageProps) {
 
           {list.generatedStories.length > 0 ? (
             <div className="grid gap-4">
-              {list.generatedStories.map((story) => (
+              {list.generatedStories.map((story: { id: string; title: string; storyType: string; difficultyLevel: string; createdAt: Date }) => (
                 <Link
                   key={story.id}
                   href={`/stories/${story.id}`}
@@ -192,7 +192,7 @@ export default async function VocabularyListPage({ params }: PageProps) {
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="divide-y divide-gray-100">
-              {list.vocabularyItems.map((item) => (
+              {list.vocabularyItems.map((item: { id: string; simplified: string; traditional: string | null; pinyin: string | null; englishDefinitions: string[]; hskLevel: number | null }) => (
                 <div key={item.id} className="p-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">

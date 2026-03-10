@@ -53,7 +53,7 @@ export default async function VocabularyPage() {
         {/* Lists Grid */}
         {lists.length > 0 ? (
           <div className="grid gap-4">
-            {lists.map((list) => (
+            {lists.map((list: Awaited<ReturnType<typeof getVocabularyLists>>[number]) => (
               <Link
                 key={list.id}
                 href={`/vocabulary/${list.id}`}

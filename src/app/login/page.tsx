@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
+  const [identifier, setIdentifier] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
@@ -19,7 +19,7 @@ export default function LoginPage() {
 
     try {
       const result = await signIn("credentials", {
-        email,
+        identifier,
         password,
         redirect: false,
       })
@@ -54,19 +54,19 @@ export default function LoginPage() {
           <input type="hidden" name="remember" value="true" />
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email or username
+              <label htmlFor="identifier" className="sr-only">
+                Email or Username
               </label>
               <input
-                id="email-address"
-                name="email"
+                id="identifier"
+                name="identifier"
                 type="text"
-                autoComplete="username email"
+                autoComplete="username"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
-                placeholder="Email or username"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email or Username"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
               />
             </div>
             <div>

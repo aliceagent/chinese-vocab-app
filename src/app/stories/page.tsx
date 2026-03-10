@@ -72,7 +72,7 @@ export default async function StoriesPage() {
         {/* Stories Grid */}
         {stories.length > 0 ? (
           <div className="grid gap-4">
-            {stories.map((story) => (
+            {stories.map((story: Awaited<ReturnType<typeof getStories>>[number]) => (
               <Link
                 key={story.id}
                 href={`/stories/${story.id}`}

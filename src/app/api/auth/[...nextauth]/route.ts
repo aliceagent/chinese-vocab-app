@@ -9,12 +9,12 @@ export const authOptions: NextAuthOptions = {
       id: "credentials",
       name: "credentials",
       credentials: {
-        email: { label: "Email or Username", type: "text" },
+        identifier: { label: "Email or Username", type: "text" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Missing email or password")
+        if (!credentials?.identifier || !credentials?.password) {
+          throw new Error("Missing email/username or password")
         }
 
         if (!prisma) {
@@ -22,15 +22,17 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          // Detect if input looks like an email (contains @) or username
-          const identifier = credentials.email.trim()
-          const isEmail = identifier.includes("@")
+          // Normalize input: trim whitespace and lowercase for case-insensitive matching
+          const identifier = credentials.identifier.trim().toLowerCase()
           
-          // Use case-insensitive mode for both email and username
+          // Try to find user by email OR username (case-insensitive)
           const user = await prisma.user.findFirst({
-            where: isEmail 
-              ? { email: { equals: identifier, mode: 'insensitive' } }
-              : { username: { equals: identifier, mode: 'insensitive' } }
+            where: {
+              OR: [
+                { email: { equals: identifier, mode: 'insensitive' } },
+                { username: { equals: identifier, mode: 'insensitive' } }
+              ]
+            }
           })
 
           if (!user) {
