@@ -1,8 +1,11 @@
 import Link from 'next/link'
 import Layout from '@/components/common/Layout'
 import { prisma } from '@/lib/prisma'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { redirect } from 'next/navigation'
 
-async function getStories() {
+async function getStories(userId: string) {
   // Return empty array if database not configured
   if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes('placeholder')) {
     return []
@@ -10,6 +13,7 @@ async function getStories() {
   
   try {
     const stories = await prisma.generatedStory.findMany({
+      where: { userId },
       orderBy: { createdAt: 'desc' },
       include: {
         vocabularyList: {
@@ -34,7 +38,13 @@ async function getStories() {
 }
 
 export default async function StoriesPage() {
-  const stories = await getStories()
+  const session = await getServerSession(authOptions)
+  
+  if (!session?.user?.id) {
+    redirect('/login')
+  }
+  
+  const stories = await getStories(session.user.id)
 
   const storyTypeLabels: Record<string, string> = {
     narrative: '📖 Narrative',
