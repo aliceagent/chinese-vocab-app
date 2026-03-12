@@ -174,26 +174,33 @@ export async function POST(request: NextRequest) {
 
     // Batch insert all vocabulary items in a single query (much faster than individual inserts)
     const validItems = vocabularyItems.filter(item => item.hanzi && typeof item.hanzi === 'string')
+    console.log(`[upload] validItems count: ${validItems.length}, filtered from ${vocabularyItems.length}`)
+    if (validItems.length === 0 && vocabularyItems.length > 0) {
+      console.log('[upload] WARNING: All items filtered out! Sample item:', JSON.stringify(vocabularyItems[0]))
+    }
     if (validItems.length > 0) {
       try {
-        await prisma.vocabularyItem.createMany({
-          data: validItems.map(item => ({
-            id: randomUUID(),
-            vocabularyListId: vocabularyList.id,
-            simplified: item.hanzi,
-            traditional: item.traditional || null,
-            pinyin: item.pinyin || null,
-            englishDefinitions: [item.english || ''],
-            hskLevel: null,
-            frequencyScore: 0,
-            partOfSpeech: null,
-            exampleSentences: [],
-            userNotes: null,
-            masteryLevel: 0
-          })),
+        const insertData = validItems.map(item => ({
+          id: randomUUID(),
+          vocabularyListId: vocabularyList.id,
+          simplified: item.hanzi,
+          traditional: item.traditional || null,
+          pinyin: item.pinyin || null,
+          englishDefinitions: [item.english || ''],
+          hskLevel: null,
+          frequencyScore: 0,
+          partOfSpeech: null,
+          exampleSentences: [],
+          userNotes: null,
+          masteryLevel: 0
+        }))
+        console.log(`[upload] Inserting ${insertData.length} items into list ${vocabularyList.id}`)
+        console.log('[upload] Sample insert data:', JSON.stringify(insertData[0]))
+        const result = await prisma.vocabularyItem.createMany({
+          data: insertData,
           skipDuplicates: true
         })
-        console.log(`[upload] step: batch inserted ${validItems.length} vocab items`)
+        console.log(`[upload] createMany result: ${JSON.stringify(result)}`)
       } catch (err) {
         console.error('[upload] Failed to batch insert vocab items:', err)
         throw new Error(`Failed to save vocabulary: ${err instanceof Error ? err.message : String(err)}`)
